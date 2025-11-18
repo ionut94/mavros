@@ -1,25 +1,93 @@
 <launch>
-	<!-- vim: set ft=xml noet : -->
-	<!-- example launch script for ArduPilot based FCU's -->
+    <!-- vim: set ft=xml noet : -->
+    <!-- example launch script for ArduPilot based FCU's -->
 
-	<arg name="fcu_url" default="/dev/ttyACM0:57600" />
-	<arg name="gcs_url" default="" />
-	<arg name="tgt_system" default="1" />
-	<arg name="tgt_component" default="1" />
-	<arg name="log_output" default="screen" />
-	<arg name="fcu_protocol" default="v2.0" />
-	<arg name="respawn_mavros" default="false" />
+    <arg name="fcu_url" default="/dev/ttyACM0:115200" />
+    <arg name="gcs_url" default="" />
+    <arg name="tgt_system" default="1" />
+    <arg name="tgt_component" default="1" />
+    <arg name="log_output" default="screen" />
+    <arg name="fcu_protocol" default="v2.0" />
+    <arg name="respawn_mavros" default="false" />
+    <arg name="tool_connected" default="false" />  <!-- Default to false -->
+    <arg name="sample_readings" default="80" />  <!-- Number of soil readings to take when sampling -->
+    <arg name="actuator_target_position" default="100" />  <!-- Linear actuator target position in mm -->
+    <arg name="kml_file_path" default="" />  <!-- Path to KML file for waypoint mission -->
+    <arg name="auto_start" default="false" />  <!-- Whether to automatically arm and start mission -->
+    <arg name="manual_only" default="false" />  <!-- Force vehicle to stay in MANUAL mode (disable AUTO) -->
+    
+    <!-- Kriging map generation parameters -->
+    <arg name="enable_kriging" default="false" />  <!-- Enable real-time kriging map generation -->
+    <arg name="session_name" default="" />  <!-- Session name for data collection (auto-generated if empty) -->
+    <arg name="auto_map_interval" default="3" />  <!-- Generate map every N samples -->
+    <arg name="kriging_sensor" default="co2_flux" />  <!-- Sensor type to map (co2_flux, soil_temp, humidity) -->
+    <arg name="gp_optimize" default="true" />  <!-- Optimize Gaussian Process hyperparameters -->
 
-	<include file="$(find mavros)/launch/node.launch">
-		<arg name="pluginlists_yaml" value="$(find mavros)/launch/apm_pluginlists.yaml" />
-		<arg name="config_yaml" value="$(find mavros)/launch/apm_config.yaml" />
+    <include file="$(find mavros)/launch/node.launch">
+        <arg name="pluginlists_yaml" value="$(find mavros)/launch/apm_pluginlists.yaml" />
+        <arg name="config_yaml" value="$(find mavros)/launch/apm_config.yaml" />
 
-		<arg name="fcu_url" value="$(arg fcu_url)" />
-		<arg name="gcs_url" value="$(arg gcs_url)" />
-		<arg name="tgt_system" value="$(arg tgt_system)" />
-		<arg name="tgt_component" value="$(arg tgt_component)" />
-		<arg name="log_output" value="$(arg log_output)" />
-		<arg name="fcu_protocol" value="$(arg fcu_protocol)" />
-		<arg name="respawn_mavros" value="$(arg respawn_mavros)" />
-	</include>
+        <arg name="fcu_url" value="$(arg fcu_url)" />
+        <arg name="gcs_url" value="$(arg gcs_url)" />
+        <arg name="tgt_system" value="$(arg tgt_system)" />
+        <arg name="tgt_component" value="$(arg tgt_component)" />
+        <arg name="log_output" value="$(arg log_output)" />
+        <arg name="fcu_protocol" value="$(arg fcu_protocol)" />
+        <arg name="respawn_mavros" value="$(arg respawn_mavros)" />
+    </include>
+    
+    <!-- Launch RC Trigger node only if tool_connected is true -->
+    <node pkg="hiresSoils_mission_control" type="RC_trigger.py" name="rc_trigger" 
+          output="screen" if="$(arg tool_connected)">
+        <param name="sample_readings" value="$(arg sample_readings)" />
+        <param name="actuator_target_position" value="$(arg actuator_target_position)" />
+    </node>
+    
+    <!-- Launch Soil Sensor Connection node only if tool_connected is true -->
+    <node pkg="hiresSoils_mission_control" type="connection_soil_comp.py" name="soil_sensor_node" 
+          output="screen" if="$(arg tool_connected)" />
+    
+    <!-- Launch Sample Data Accumulator to collect gas samples with GPS for kriging -->
+    <node pkg="hiresSoils_mission_control" type="sample_data_accumulator.py" name="sample_data_accumulator" 
+          output="screen" if="$(arg tool_connected)">
+        <param name="session_name" value="$(arg session_name)" />
+        <param name="base_data_dir" value="$(env HOME)/mission_samples" />
+        <param name="base_kml_file" value="$(env HOME)/mission_samples/soil_samples.kml" />
+    </node>
+    
+    <!-- Launch Kriging Map Generator (optional, requires Python 3.9 and soilmaps_core) -->
+    <node pkg="hiresSoils_mission_control" type="kriging_map_generator.py" name="kriging_map_generator" 
+          output="screen" if="$(arg enable_kriging)" launch-prefix="/usr/bin/python3.9">
+        <param name="session_name" value="$(arg session_name)" />
+        <param name="data_base_dir" value="$(env HOME)/mission_samples" />
+        <param name="output_base_dir" value="$(env HOME)/mission_maps" />
+        <param name="auto_interval" value="$(arg auto_map_interval)" />
+        <param name="sensor_type" value="$(arg kriging_sensor)" />
+        <param name="optimize" value="$(arg gp_optimize)" />
+        <param name="manual_rc_channel" value="11" />
+        <param name="manual_rc_threshold" value="1500" />
+    </node>
+    
+    <!-- Launch Mission Status Monitor node to track mission state -->
+    <node pkg="hiresSoils_mission_control" type="mission_status.py" name="mission_status_monitor" 
+          output="screen" if="$(arg tool_connected)" />
+          
+    <!-- Launch mission waypoint loader always (listening for /farmB/mission_waypoints) -->
+    <node pkg="hiresSoils_mission_control" type="kml_waypoint_loader.py" name="waypoint_loader"
+          output="screen">
+        <param name="kml_file_path" value="$(arg kml_file_path)" />
+        <param name="auto_start" value="$(arg auto_start)" />
+    </node>
+
+    <!-- Launch mode logger to record the AUTO mode of the vehicle -->
+    <node pkg="hiresSoils_mission_control" type="mode_logger.py" name="mode_logger" 
+            output="screen">
+        <param name="output_dir" value="~/mode_logs"/>
+    </node>
+
+    <!-- Launch manual mode enforcer to prevent mode changes from MANUAL when manual_only is true -->
+    <node pkg="hiresSoils_mission_control" type="manual_mode_enforcer.py" name="manual_mode_enforcer" 
+            output="screen">
+        <param name="manual_only" value="$(arg manual_only)"/>
+    </node>
 </launch>
