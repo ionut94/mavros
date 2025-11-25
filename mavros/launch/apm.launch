@@ -22,6 +22,15 @@
     <arg name="auto_map_interval" default="3" />  <!-- Generate map every N samples -->
     <arg name="kriging_sensor" default="co2_flux" />  <!-- Sensor type to map (co2_flux, soil_temp, humidity) -->
     <arg name="gp_optimize" default="true" />  <!-- Optimize Gaussian Process hyperparameters -->
+    
+    <!-- Active sampling parameters -->
+    <arg name="enable_active_sampling" default="false" />  <!-- Enable active sampling coordinator -->
+    <arg name="n_initial_samples" default="4" />  <!-- Number of initial sampling points -->
+    <arg name="initialization_strategy" default="stratified_quadrants" />  <!-- Initial point selection strategy -->
+    <arg name="acquisition_function" default="greedy" />  <!-- Acquisition function for next point selection -->
+    <arg name="min_spacing_m" default="10.0" />  <!-- Minimum spacing between sampling points (meters) -->
+    <arg name="sample_altitude" default="10.0" />  <!-- Altitude for sampling waypoints (meters) -->
+    <arg name="direct_mavros_push" default="true" />  <!-- Push waypoints directly to MAVROS for live QGC updates -->
 
     <include file="$(find mavros)/launch/node.launch">
         <arg name="pluginlists_yaml" value="$(find mavros)/launch/apm_pluginlists.yaml" />
@@ -89,5 +98,16 @@
     <node pkg="hiresSoils_mission_control" type="manual_mode_enforcer.py" name="manual_mode_enforcer" 
             output="screen">
         <param name="manual_only" value="$(arg manual_only)"/>
+    </node>
+    
+    <!-- Launch Active Sampling Coordinator (optional, requires soilmaps_core) -->
+    <node pkg="hiresSoils_mission_control" type="active_sampling_coordinator.py" name="active_sampling_coordinator" 
+          output="screen" if="$(arg enable_active_sampling)" launch-prefix="/usr/bin/python3.9">
+        <param name="n_initial_samples" value="$(arg n_initial_samples)" />
+        <param name="initialization_strategy" value="$(arg initialization_strategy)" />
+        <param name="acquisition_function" value="$(arg acquisition_function)" />
+        <param name="min_spacing_m" value="$(arg min_spacing_m)" />
+        <param name="sample_altitude" value="$(arg sample_altitude)" />
+        <param name="direct_mavros_push" value="$(arg direct_mavros_push)" />
     </node>
 </launch>
