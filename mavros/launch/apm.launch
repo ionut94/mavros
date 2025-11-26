@@ -32,6 +32,12 @@
     <arg name="sample_altitude" default="10.0" />  <!-- Altitude for sampling waypoints (meters) -->
     <arg name="direct_mavros_push" default="true" />  <!-- Push waypoints directly to MAVROS for live QGC updates -->
 
+    <!-- Magazine sampling parameters (corer + magazine system) -->
+    <arg name="magazine_on" default="false" />  <!-- Enable magazine-based soil coring sequence on CH13 LOW -->
+    <arg name="safe_position" default="50" />  <!-- Starting/ending safe position in mm -->
+    <arg name="core_head_location" default="105" />  <!-- Position where core heads sit in magazine (mm) -->
+    <arg name="soil_target_location" default="150" />  <!-- Depth to insert core into soil (mm) -->
+
     <include file="$(find mavros)/launch/node.launch">
         <arg name="pluginlists_yaml" value="$(find mavros)/launch/apm_pluginlists.yaml" />
         <arg name="config_yaml" value="$(find mavros)/launch/apm_config.yaml" />
@@ -50,6 +56,10 @@
           output="screen" if="$(arg tool_connected)">
         <param name="sample_readings" value="$(arg sample_readings)" />
         <param name="actuator_target_position" value="$(arg actuator_target_position)" />
+        <param name="magazine_on" value="$(arg magazine_on)" />
+        <param name="safe_position" value="$(arg safe_position)" />
+        <param name="core_head_location" value="$(arg core_head_location)" />
+        <param name="soil_target_location" value="$(arg soil_target_location)" />
     </node>
     
     <!-- Launch Soil Sensor Connection node only if tool_connected is true -->
