@@ -38,6 +38,10 @@
     <arg name="core_head_location" default="105" />  <!-- Position where core heads sit in magazine (mm) -->
     <arg name="soil_target_location" default="150" />  <!-- Depth to insert core into soil (mm) -->
 
+    <!-- Sensor type selection (CO2 vs N2O) -->
+    <arg name="sensor_type" default="co2" />  <!-- Sensor type: co2 (EGM-5) or n2o (LiCOR LI-7820) -->
+    <arg name="n2o_duration" default="60" />  <!-- Duration in seconds for N2O sampling (LiCOR only) -->
+
     <include file="$(find mavros)/launch/node.launch">
         <arg name="pluginlists_yaml" value="$(find mavros)/launch/apm_pluginlists.yaml" />
         <arg name="config_yaml" value="$(find mavros)/launch/apm_config.yaml" />
@@ -60,6 +64,8 @@
         <param name="safe_position" value="$(arg safe_position)" />
         <param name="core_head_location" value="$(arg core_head_location)" />
         <param name="soil_target_location" value="$(arg soil_target_location)" />
+        <param name="sensor_type" value="$(arg sensor_type)" />
+        <param name="n2o_duration" value="$(arg n2o_duration)" />
     </node>
     
     <!-- Launch Soil Sensor Connection node only if tool_connected is true -->
@@ -72,6 +78,7 @@
         <param name="session_name" value="$(arg session_name)" />
         <param name="base_data_dir" value="$(env HOME)/mission_samples" />
         <param name="base_kml_file" value="$(env HOME)/mission_samples/soil_samples.kml" />
+        <param name="sensor_type" value="$(arg sensor_type)" />
     </node>
     
     <!-- Launch Kriging Map Generator (optional, requires Python 3.9 and soilmaps_core) -->
