@@ -56,7 +56,7 @@
     </include>
     
     <!-- Launch RC Trigger node only if tool_connected is true -->
-    <node pkg="hiresSoils_mission_control" type="RC_trigger.py" name="rc_trigger" 
+    <node pkg="hiressoils_mission_control" type="RC_trigger.py" name="rc_trigger" 
           output="screen" if="$(arg tool_connected)">
         <param name="sample_readings" value="$(arg sample_readings)" />
         <param name="actuator_target_position" value="$(arg actuator_target_position)" />
@@ -69,11 +69,11 @@
     </node>
     
     <!-- Launch Soil Sensor Connection node only if tool_connected is true -->
-    <node pkg="hiresSoils_mission_control" type="connection_soil_comp.py" name="soil_sensor_node" 
+    <node pkg="hiressoils_mission_control" type="connection_soil_comp.py" name="soil_sensor_node" 
           output="screen" if="$(arg tool_connected)" />
     
     <!-- Launch Sample Data Accumulator to collect gas samples with GPS for kriging -->
-    <node pkg="hiresSoils_mission_control" type="sample_data_accumulator.py" name="sample_data_accumulator" 
+    <node pkg="hiressoils_mission_control" type="sample_data_accumulator.py" name="sample_data_accumulator" 
           output="screen" if="$(arg tool_connected)">
         <param name="session_name" value="$(arg session_name)" />
         <param name="base_data_dir" value="$(env HOME)/mission_samples" />
@@ -82,7 +82,7 @@
     </node>
     
     <!-- Launch Kriging Map Generator (optional, requires Python 3.9 and soilmaps_core) -->
-    <node pkg="hiresSoils_mission_control" type="kriging_map_generator.py" name="kriging_map_generator" 
+    <node pkg="hiressoils_mission_control" type="kriging_map_generator.py" name="kriging_map_generator" 
           output="screen" if="$(arg enable_kriging)" launch-prefix="/usr/bin/python3.9">
         <param name="session_name" value="$(arg session_name)" />
         <param name="data_base_dir" value="$(env HOME)/mission_samples" />
@@ -95,30 +95,30 @@
     </node>
     
     <!-- Launch Mission Status Monitor node to track mission state -->
-    <node pkg="hiresSoils_mission_control" type="mission_status.py" name="mission_status_monitor" 
+    <node pkg="hiressoils_mission_control" type="mission_status.py" name="mission_status_monitor" 
           output="screen" if="$(arg tool_connected)" />
           
     <!-- Launch mission waypoint loader always (listening for /farmB/mission_waypoints) -->
-    <node pkg="hiresSoils_mission_control" type="kml_waypoint_loader.py" name="waypoint_loader"
+    <node pkg="hiressoils_mission_control" type="kml_waypoint_loader.py" name="waypoint_loader"
           output="screen">
         <param name="kml_file_path" value="$(arg kml_file_path)" />
         <param name="auto_start" value="$(arg auto_start)" />
     </node>
 
     <!-- Launch mode logger to record the AUTO mode of the vehicle -->
-    <node pkg="hiresSoils_mission_control" type="mode_logger.py" name="mode_logger" 
+    <node pkg="hiressoils_mission_control" type="mode_logger.py" name="mode_logger" 
             output="screen">
         <param name="output_dir" value="~/mode_logs"/>
     </node>
 
     <!-- Launch manual mode enforcer to prevent mode changes from MANUAL when manual_only is true -->
-    <node pkg="hiresSoils_mission_control" type="manual_mode_enforcer.py" name="manual_mode_enforcer" 
+    <node pkg="hiressoils_mission_control" type="manual_mode_enforcer.py" name="manual_mode_enforcer" 
             output="screen">
         <param name="manual_only" value="$(arg manual_only)"/>
     </node>
     
     <!-- Launch Active Sampling Coordinator (optional, requires soilmaps_core) -->
-    <node pkg="hiresSoils_mission_control" type="active_sampling_coordinator.py" name="active_sampling_coordinator" 
+    <node pkg="hiressoils_mission_control" type="active_sampling_coordinator.py" name="active_sampling_coordinator" 
           output="screen" if="$(arg enable_active_sampling)" launch-prefix="/usr/bin/python3.9">
         <param name="n_initial_samples" value="$(arg n_initial_samples)" />
         <param name="initialization_strategy" value="$(arg initialization_strategy)" />
